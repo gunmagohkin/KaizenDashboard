@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Redirect Web Apps</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 300;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .status {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+        
+        .current-url {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .countdown {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 30px 0;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            color: #ffd700;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ffed4a);
+            border-radius: 3px;
+            transition: width 1s linear;
+        }
+        
+        .app-list {
+            margin-top: 30px;
+            text-align: left;
+        }
+        
+        .app-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        
+        .app-item.current {
+            background: rgba(255, 215, 0, 0.3);
+            transform: scale(1.02);
+        }
+        
+        .controls {
+            margin-top: 30px;
+        }
+        
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .paused {
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Auto Redirect</h1>
+        <div class="status" id="status">Initializing...</div>
+        
+        <div class="countdown" id="countdown">20</div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="current-url" id="currentUrl">Loading...</div>
+        
+        <div class="controls">
+            <button onclick="togglePause()" id="pauseBtn">Pause</button>
+            <button onclick="nextApp()">Next App</button>
+            <button onclick="resetTimer()">Reset</button>
+        </div>
+        
+        <div class="app-list">
+            <div class="app-item" id="app0">App 1: Google Script 1</div>
+            <div class="app-item" id="app1">App 2: Google Script 2</div>
+            <div class="app-item" id="app2">App 3: Google Script 3</div>
+        </div>
+    </div>
+
+    <script>
+        const webApps = [
+            "https://script.google.com/macros/s/AKfycby9FMoDI1yST9Zql0mFXXs0Sk5e_Sl4L5cm33ePxFzqlYHng42QKAN18OF6Zwm7HZ3tgA/exec",
+            "https://script.google.com/macros/s/AKfycbwXL4VHb_Wv3lnefh0JCz7Jn7sE3HmEEqKbYJqu5QrlUmNTDv6uLOj7zsK_3Lcqt9uQ/exec",
+            "https://script.google.com/macros/s/AKfycbwvsihGUuVG012flegXlxqMoRW0ur6ealnTZYY1sthJ8hINjHOGxJZ9y_ghyF2gOUQy/exec"
+        ];
+        
+        let currentIndex = 0;
+        let countdown = 20;
+        let isPaused = false;
+        let intervalId;
+        let countdownId;
+        
+        const statusEl = document.getElementById('status');
+        const countdownEl = document.getElementById('countdown');
+        const currentUrlEl = document.getElementById('currentUrl');
+        const progressFillEl = document.getElementById('progressFill');
+        const pauseBtnEl = document.getElementById('pauseBtn');
+        
+        function updateUI() {
+            statusEl.textContent = isPaused ? 'Paused' : `Redirecting to App ${currentIndex + 1} of ${webApps.length}`;
+            currentUrlEl.textContent = webApps[currentIndex];
+            countdownEl.textContent = countdown;
+            
+            // Update progress bar
+            const progress = ((20 - countdown) / 20) * 100;
+            progressFillEl.style.width = progress + '%';
+            
+            // Highlight current app
+            document.querySelectorAll('.app-item').forEach((item, index) => {
+                item.classList.toggle('current', index === currentIndex);
+            });
+            
+            // Update container class for paused state
+            document.querySelector('.container').classList.toggle('paused', isPaused);
+        }
+        
+        function redirectToCurrentApp() {
+            window.location.href = webApps[currentIndex];
+        }
+        
+        function startTimer() {
+            if (countdownId) clearInterval(countdownId);
+            
+            countdownId = setInterval(() => {
+                if (!isPaused) {
+                    countdown--;
+                    updateUI();
+                    
+                    if (countdown <= 0) {
+                        redirectToCurrentApp();
+                        currentIndex = (currentIndex + 1) % webApps.length;
+                        countdown = 20;
+                        updateUI();
+                    }
+                }
+            }, 1000);
+        }
+        
+        function togglePause() {
+            isPaused = !isPaused;
+            pauseBtnEl.textContent = isPaused ? 'Resume' : 'Pause';
+            updateUI();
+        }
+        
+        function nextApp() {
+            redirectToCurrentApp();
+            currentIndex = (currentIndex + 1) % webApps.length;
+            countdown = 20;
+            updateUI();
+        }
+        
+        function resetTimer() {
+            countdown = 20;
+            updateUI();
+        }
+        
+        // Initialize
+        updateUI();
+        startTimer();
+        
+        // Initial redirect after 1 second
+        setTimeout(() => {
+            if (!isPaused) {
+                redirectToCurrentApp();
+                currentIndex = (currentIndex + 1) % webApps.length;
+                countdown = 20;
+                updateUI();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
