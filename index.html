@@ -190,7 +190,16 @@
         }
         
         function redirectToCurrentApp() {
-            window.location.href = webApps[currentIndex];
+            // Open in new window/tab but focus on it
+            const newWindow = window.open(webApps[currentIndex], '_blank');
+            if (newWindow) {
+                newWindow.focus();
+            }
+            
+            // Continue with next app
+            currentIndex = (currentIndex + 1) % webApps.length;
+            countdown = 20;
+            updateUI();
         }
         
         function startTimer() {
@@ -203,9 +212,6 @@
                     
                     if (countdown <= 0) {
                         redirectToCurrentApp();
-                        currentIndex = (currentIndex + 1) % webApps.length;
-                        countdown = 20;
-                        updateUI();
                     }
                 }
             }, 1000);
@@ -219,9 +225,6 @@
         
         function nextApp() {
             redirectToCurrentApp();
-            currentIndex = (currentIndex + 1) % webApps.length;
-            countdown = 20;
-            updateUI();
         }
         
         function resetTimer() {
@@ -237,9 +240,6 @@
         setTimeout(() => {
             if (!isPaused) {
                 redirectToCurrentApp();
-                currentIndex = (currentIndex + 1) % webApps.length;
-                countdown = 20;
-                updateUI();
             }
         }, 1000);
     </script>
