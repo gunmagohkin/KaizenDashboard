@@ -124,7 +124,7 @@
       document.getElementById('dateTime').textContent = now.toLocaleString('en-US', options);
     }
   
-    setInterval(updateDateTime, 2000);
+    setInterval(updateDateTime, 1000);
     updateDateTime();
   
     // Rotating iframe links
@@ -158,6 +158,11 @@
     }
   
     setInterval(autoScroll, 100); // Smooth scrolling every 100ms
+
+    // Auto-refresh the entire page every 30 minutes
+    setInterval(function() {
+      window.location.reload();
+    }, 30 * 60 * 1000); // 30 minutes in milliseconds
   </script>
 
 </body>
